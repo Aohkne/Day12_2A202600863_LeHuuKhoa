@@ -24,6 +24,14 @@ RUN pip install --no-cache-dir -r agent-requirements.txt
 COPY requirements.txt ./server-requirements.txt
 RUN pip install --no-cache-dir -r server-requirements.txt
 
+# Download data files from GitHub (bypasses railway up upload size limits)
+RUN mkdir -p /build/agent/data && \
+    REPO="https://raw.githubusercontent.com/Aohkne/Day12_2A202600863_LeHuuKhoa/main/06-lab-complete/agent/data" && \
+    curl -sL "$REPO/policy_mock_vi.md" -o /build/agent/data/policy_mock_vi.md && \
+    curl -sL "$REPO/order_customer_mock_data.json" -o /build/agent/data/order_customer_mock_data.json && \
+    curl -sL "$REPO/test.json" -o /build/agent/data/test.json && \
+    ls -la /build/agent/data/
+
 
 # Stage 2: Runtime
 FROM python:3.11-slim AS runtime
@@ -40,7 +48,8 @@ COPY server.py .
 
 # Copy agent source
 COPY agent/src/ ./agent/src/
-COPY agent/data/ ./agent/data/
+# Data files were downloaded from GitHub in builder stage (not from build context)
+COPY --from=builder /build/agent/data/ ./agent/data/
 
 RUN chown -R agent:agent /app
 
