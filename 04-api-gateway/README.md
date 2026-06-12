@@ -99,5 +99,8 @@ Request
 ## Câu hỏi thảo luận
 
 1. Khi nào nên dùng API Key vs JWT vs OAuth2?
+- API KEY: Sử dụng để connect server to server
+- JWT: Dùng để xác thực người dùng
+- OAuth2: như passport dùng để check login google
 2. Rate limit nên đặt bao nhiêu request/phút cho một AI agent?
 3. Nếu API key bị lộ, bạn phát hiện và xử lý như thế nào?

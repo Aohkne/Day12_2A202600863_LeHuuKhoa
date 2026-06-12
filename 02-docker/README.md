@@ -111,5 +111,8 @@ COPY --from=builder ...        # copy chỉ /site-packages
 ## Câu hỏi thảo luận
 
 1. Tại sao `COPY requirements.txt .` rồi `RUN pip install` TRƯỚC khi `COPY . .`?
+> Để tận dụng cơ chế lưu cache (Caching) của Docker. Docker build image theo từng lớp (layer). Khi một layer bị thay đổi, tất cả các layer nằm bên dưới nó sẽ bị vô hiệu hóa cache và phải build lại từ đầu.
 2. `.dockerignore` nên chứa những gì? Tại sao `venv/` và `.env` quan trọng?
+> File chứa những key, môi trường vì rất nặng
 3. Nếu agent cần đọc file từ disk, làm sao mount volume vào container?
+> docker run -v <đường_dẫn_trên_máy_host>:<đường_dẫn_trong_container>
