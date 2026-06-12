@@ -1,0 +1,60 @@
+# ============================================================
+# Production Dockerfile — VinShop Shopping Assistant
+# Multi-stage, non-root, < 2GB (sentence-transformers included)
+# ============================================================
+
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y \
+    gcc g++ libpq-dev curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install agent deps first (heavier, cached separately)
+COPY agent/src/requirements.txt ./agent-requirements.txt
+RUN pip install --no-cache-dir --user -r agent-requirements.txt
+
+# Install server deps
+COPY requirements.txt ./server-requirements.txt
+RUN pip install --no-cache-dir --user -r server-requirements.txt
+
+
+# Stage 2: Runtime
+FROM python:3.11-slim AS runtime
+
+RUN groupadd -r agent && useradd -r -g agent -d /app agent
+
+WORKDIR /app
+
+# Copy installed packages
+COPY --from=builder /root/.local /home/agent/.local
+
+# Copy FastAPI server
+COPY server.py .
+
+# Copy agent source
+COPY agent/src/ ./agent/src/
+COPY agent/data/ ./agent/data/
+
+# Copy existing chroma index (pre-built to avoid cold-start rebuild)
+COPY agent/src/.chroma/ ./agent/src/.chroma/
+
+RUN chown -R agent:agent /app
+
+USER agent
+
+ENV PATH=/home/agent/.local/bin:$PATH
+ENV PYTHONPATH=/app
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=3 \
+    CMD python -c \
+    "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" \
+    || exit 1
+
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

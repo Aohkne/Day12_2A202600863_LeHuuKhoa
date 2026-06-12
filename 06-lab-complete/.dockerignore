@@ -9,3 +9,5 @@ venv/
 *.md
 tests/
 .DS_Store
+agent/.env
+agent/src/artifacts/
