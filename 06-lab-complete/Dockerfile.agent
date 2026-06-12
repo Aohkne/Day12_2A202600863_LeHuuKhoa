@@ -1,6 +1,6 @@
 # ============================================================
 # Production Dockerfile — VinShop Shopping Assistant
-# Multi-stage, non-root, < 2GB (sentence-transformers included)
+# Multi-stage, non-root, venv-based (no --user path issues)
 # ============================================================
 
 # Stage 1: Builder
@@ -12,13 +12,17 @@ RUN apt-get update && apt-get install -y \
     gcc g++ libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install agent deps first (heavier, cached separately)
+# Create virtualenv — avoids --user/path mismatch between stages
+RUN python -m venv /venv
+ENV PATH="/venv/bin:$PATH"
+
+# Install agent deps (heavier, cached separately)
 COPY agent/src/requirements.txt ./agent-requirements.txt
-RUN pip install --no-cache-dir --user -r agent-requirements.txt
+RUN pip install --no-cache-dir -r agent-requirements.txt
 
 # Install server deps
 COPY requirements.txt ./server-requirements.txt
-RUN pip install --no-cache-dir --user -r server-requirements.txt
+RUN pip install --no-cache-dir -r server-requirements.txt
 
 
 # Stage 2: Runtime
@@ -28,8 +32,8 @@ RUN groupadd -r agent && useradd -r -g agent -d /app agent
 
 WORKDIR /app
 
-# Copy installed packages
-COPY --from=builder /root/.local /home/agent/.local
+# Copy the entire venv from builder
+COPY --from=builder /venv /venv
 
 # Copy FastAPI server
 COPY server.py .
@@ -42,7 +46,8 @@ RUN chown -R agent:agent /app
 
 USER agent
 
-ENV PATH=/home/agent/.local/bin:$PATH
+# Use venv python/uvicorn directly
+ENV PATH="/venv/bin:$PATH"
 ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
