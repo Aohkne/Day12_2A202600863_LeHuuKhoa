@@ -81,7 +81,7 @@ Production app tuân thủ **12-Factor App** methodology: config từ environmen
 ### Exercise 3.1: Railway deployment
 
 - **Platform:** Railway
-- **URL:** https://day122a202600863lehuukhoa-production.up.railway.app
+- **URL:** https://day12-production-agent-production-7146.up.railway.app
 - **Config file:** `railway.toml` với `healthcheckPath = "/health"`, PORT đọc từ env var
 - **Test kết quả:**
   ```

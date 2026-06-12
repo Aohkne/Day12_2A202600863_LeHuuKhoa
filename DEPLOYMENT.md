@@ -7,12 +7,12 @@
 ## Public URL
 
 ```
-https://day122a202600863lehuukhoa-production.up.railway.app
+https://day12-production-agent-production-7146.up.railway.app
 ```
 
 ## Platform
 
-**Railway** — `03-cloud-deployment/railway/app.py`, PORT từ env var, health check tại `/health`
+**Railway** — `06-lab-complete/server.py` (FastAPI + LangGraph Shopping Agent), PORT từ env var, health check tại `/health`
 
 ---
 
@@ -20,25 +20,32 @@ https://day122a202600863lehuukhoa-production.up.railway.app
 
 ### Health Check 
 ```bash
-curl https://day122a202600863lehuukhoa-production.up.railway.app/health
+curl https://day12-production-agent-production-7146.up.railway.app/health
 # Actual result:
-# {"status":"ok","uptime_seconds":10731.7,"platform":"Railway","timestamp":"2026-06-12T08:05:31.265502+00:00"}
+# {"status":"ok","uptime_seconds":279.0,"version":"1.0.0","timestamp":"2026-06-12T13:04:18.085877+00:00"}
 ```
 
-### Ask Agent 
+### Readiness Check
 ```bash
-curl -X POST https://day122a202600863lehuukhoa-production.up.railway.app/ask \
+curl https://day12-production-agent-production-7146.up.railway.app/ready
+# Actual result:
+# {"ready":true}
+```
+
+### Ask Agent (requires API key)
+```bash
+curl -X POST https://day12-production-agent-production-7146.up.railway.app/ask \
+  -H "X-API-Key: $AGENT_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is Docker?"}'
-# Actual result:
-# {"question":"What is Docker?","answer":"Container là cách đóng gói app để chạy ở mọi nơi. Build once, run anywhere!","platform":"Railway"}
+  -d '{"question": "Chính sách đổi trả hàng là gì?"}'
 ```
 
-### Root 
+### Auth required (no key)
 ```bash
-curl https://day122a202600863lehuukhoa-production.up.railway.app/
-# Actual result:
-# {"message":"AI Agent running on Railway!","docs":"/docs","health":"/health"}
+curl -X POST https://day12-production-agent-production-7146.up.railway.app/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "test"}'
+# Result: HTTP 422 (missing required header)
 ```
 
 ---
@@ -47,13 +54,16 @@ curl https://day122a202600863lehuukhoa-production.up.railway.app/
 
 ```
 === Health Check ===
-{"status":"ok","uptime_seconds":10731.7,"platform":"Railway","timestamp":"..."}   HTTP 200
+{"status":"ok","uptime_seconds":279.0,"version":"1.0.0","timestamp":"2026-06-12T13:04:18.085877+00:00"}   HTTP 200
 
-=== Root ===
-{"message":"AI Agent running on Railway!","docs":"/docs","health":"/health"}   HTTP 200
+=== Ready Check ===
+{"ready":true}   HTTP 200
 
-=== Ask Question ===
-{"question":"What is Docker?","answer":"Container là cách đóng gói...","platform":"Railway"}   HTTP 200
+=== Auth (no key) ===
+HTTP 422 — X-API-Key header required
+
+=== Ask (with key) ===
+Shopping Agent LangGraph response   HTTP 200
 ```
 
 ---
